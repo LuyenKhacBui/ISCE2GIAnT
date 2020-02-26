@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-slc", "/media/sf_F_DRIVE/HANOI/InSAR_Sent/SLCS/DESCENDING/DV", "-orb", "/media/sf_F_DRIVE/HANOI/InSAR_Sent/POEORB", "-aux", "/media/sf_F_DRIVE/HANOI/InSAR_Sent/AUXILIARY", "-dem", "/media/sf_F_DRIVE/HANOI/InSAR_Sent/DEM/demLat_N20_N22_Lon_E105_E107.dem", "--start", "20160403", "--end", "20160509"],
+            "args": ["--btemp", "200", "--bperp", "90"],
             "cwd": "/media/sf_F_DRIVE/HANOI/InSAR_Sent/ISCE/IFGS_For_SBAS_Selection_Test"
         }
     ]
