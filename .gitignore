@@ -127,3 +127,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+topsApp_mpi_run_IFG.py
