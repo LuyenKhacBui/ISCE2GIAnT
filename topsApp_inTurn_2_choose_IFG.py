@@ -163,13 +163,13 @@ if __name__ == '__main__':
 	#	plt.text(imgyear[imgidx], imgperp[imgidx], imgname[imgidx], horizontalalignment = 'center', verticalalignment = 'top')
 		
 	for ifgidx in range(len(IFGS)):
-		plt.plot([x1[ifgidx], x2[ifgidx]], [y1[ifgidx], y2[ifgidx]], '-k')
+		plt.plot([x1[ifgidx], x2[ifgidx]], [y1[ifgidx], y2[ifgidx]], '-', color = 'gray')
 		#plt.text(np.mean([x1[ifgidx], x2[ifgidx]]), np.mean([y1[ifgidx], y2[ifgidx]]), '(' + str(ifgidx + 1) + ')', horizontalalignment = 'center', verticalalignment = 'center')	
 	
 	plt.plot(imgyear, imgperp, 'ro')
 	
 	plt.axis([min(min(x1), min(x2)) - (max(max(x1), max(x2)) - min(min(x1), min(x2)))/10, max(max(x1), max(x2)) + (max(max(x1), max(x2)) - min(min(x1), min(x2)))/10, min(min(y1), min(y2)) - (max(max(y1), max(y2)) - min(min(y1), min(y2)))/10, max(max(y1), max(y2)) + (max(max(y1), max(y2)) - min(min(y1), min(y2)))/10])		
-	plt.xlabel('Temporal Baseline [year]', fontsize = 14, color = 'r')
+	plt.xlabel('Acquisition Time [year]', fontsize = 14, color = 'r')
 	plt.ylabel('Perpendicular Baseline [m]', fontsize = 14, color = 'b')
 	plt.title('Inteferogram selection for SBAS method', fontsize = 20, color = 'r')
 	plt.grid()	

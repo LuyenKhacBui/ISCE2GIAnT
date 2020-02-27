@@ -4,13 +4,14 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--btemp", "200", "--bperp", "90"],
+            "args": ["--btemp", "90", "--bperp", "200"],
             "cwd": "/media/sf_F_DRIVE/HANOI/InSAR_Sent/ISCE/IFGS_For_SBAS_Selection_Test"
         }
     ]
