@@ -221,8 +221,8 @@ if __name__ == '__main__':
 					# This is for the case topsApp.py did not run successfully 
 					# that 'filt_topophase.unw.geo' &/or 'topophase.cor.geo' were not generated
 					# usually coherence threshold is too high that no point left to subsequently used
-					print('\t\tnDelete current directory as topsApp.py has not run successfully')
-					manuallogger(logfile, 'a', '\t\tnDelete current directory as topsApp.py has not run successfully')
+					print('\t\tDelete current directory as topsApp.py has not run successfully')
+					manuallogger(logfile, 'a', '\t\tDelete current directory as topsApp.py has not run successfully')
 					shutil.rmtree(subdir) # This does not work with Ubuntu shared folder. Use below.
 					#cmd = "rm -r " + subdir
 					#subprocess.call(cmd, shell=True)
