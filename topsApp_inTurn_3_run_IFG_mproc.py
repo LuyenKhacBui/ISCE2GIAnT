@@ -127,6 +127,7 @@ def topsApp_run(cwd,logfile,totalifgno,ifgno,ifgfullpath,orbdir,auxdir,masterslc
 
 
 if __name__ == '__main__':
+	# check
 	print
 	print ("##########################################################################################################################")
 	print ("#                                                                                                                        #")
