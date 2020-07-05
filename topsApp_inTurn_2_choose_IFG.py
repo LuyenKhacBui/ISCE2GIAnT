@@ -169,8 +169,10 @@ if __name__ == '__main__':
 	plt.plot(imgyear, imgperp, 'ro')
 	
 	plt.axis([min(min(x1), min(x2)) - (max(max(x1), max(x2)) - min(min(x1), min(x2)))/10, max(max(x1), max(x2)) + (max(max(x1), max(x2)) - min(min(x1), min(x2)))/10, min(min(y1), min(y2)) - (max(max(y1), max(y2)) - min(min(y1), min(y2)))/10, max(max(y1), max(y2)) + (max(max(y1), max(y2)) - min(min(y1), min(y2)))/10])		
-	plt.xlabel('Acquisition Time [year]', fontsize = 14, color = 'r')
-	plt.ylabel('Perpendicular Baseline [m]', fontsize = 14, color = 'b')
+	#plt.xlabel('Acquisition Time [year]', fontsize = 14, color = 'r')
+	#plt.ylabel('Perpendicular Baseline [m]', fontsize = 14, color = 'b')
+	plt.xlabel('Acquisition Time [year]', fontsize = 14)
+	plt.ylabel('Perpendicular Baseline [m]', fontsize = 14)
 	plt.title('Inteferogram selection for SBAS method', fontsize = 20, color = 'r')
 	plt.grid()	
 	figdpi = 300

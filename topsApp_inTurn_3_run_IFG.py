@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import subprocess
-import os, sys, glob
+import os, sys, glob, shutil
 from datetime import date
 import datetime
 import xml.etree.ElementTree as ET
@@ -40,10 +40,32 @@ def manuallogger(logfile, method, string):
 			myfile.write(tmp_str)
 		elif method == "a":
 			tmp_str = "\r\n" + str(crttm) + " | INFO: " + string
-			myfile.write(tmp_str)		
+			myfile.write(tmp_str)
+
+def iscexmlgen(xmffle,orbdir,auxdir,mstfle,slvfle,demfle):
+	tree = ET.parse(xmffle)
+	root = tree.getroot()
+	for child1 in root:				
+		for child2 in child1:					
+			if child2.attrib['name'] in ['master', 'slave']:
+				for child3 in child2:
+					if child3.attrib['name'] == 'orbit directory':
+						child3.text = orbdir
+					elif child3.attrib['name'] == 'auxiliary data directory':
+						child3.text = auxdir
+					elif child3.attrib['name'] == 'SAFE':
+						if child2.attrib['name'] == 'master':
+							child3.text = os.path.join(slcdir, mstfle)
+						elif child2.attrib['name'] == 'slave':
+							child3.text = os.path.join(slcdir, slvfle)
+			elif child2.attrib['name'] == 'demFilename':
+				child2.text = demfle + '.wgs84'
+	tree.write(xmffle)		
+
 
 
 if __name__ == '__main__':
+	sttm_all = datetime.datetime.now()
 	print
 	print ("##########################################################################################################################")
 	print ("#                                                                                                                        #")
@@ -51,13 +73,9 @@ if __name__ == '__main__':
 	print ("#                                                                                                                        #")
 	print ("##########################################################################################################################")
 	
-	inputs  = cmdLineParse()
-	slcdir  = os.path.abspath(inputs.slc)
-	orbdir  = os.path.abspath(inputs.orb)
-	auxdir  = os.path.abspath(inputs.aux)
-	ifgfle  = os.path.abspath(inputs.ifg)
-	demfle  = inputs.dem
-	xmlfile = 'topsApp.xml'
+	inputs = cmdLineParse()
+	slcdir,orbdir,auxdir  = os.path.abspath(inputs.slc),os.path.abspath(inputs.orb),os.path.abspath(inputs.aux)
+	ifgfle,demfle,xmlfile = os.path.abspath(inputs.ifg),os.path.abspath(inputs.dem),'topsApp.xml'
 	cwd = os.getcwd()
 	
 	errstop = False
@@ -71,7 +89,7 @@ if __name__ == '__main__':
 			print('The dem file: %s is NOT existent.' %(os.path.join(cwd, elem)))
 			errstop = True
 	del demlst
-	dempth, demfle = os.path.split(demfle)
+	dempth,demfle = os.path.split(demfle)
 
 	if errstop:
 		sys.exit()
@@ -99,62 +117,71 @@ if __name__ == '__main__':
 	if errstop == True:
 		sys.exit()
 	
-	sttm = datetime.datetime.now()
-	logfile = os.path.splitext(os.path.basename(__file__))[0] + '_log.txt'
-	logfile = os.path.join(cwd, logfile)	
+	prevlogslist = glob.glob(os.path.splitext(os.path.basename(__file__))[0] + '_log_*.txt')
+	if len(prevlogslist) > 0:
+		nextlogsno   = str(max([int(item[-6:-4]) for item in prevlogslist])+1)
+	else:
+		nextlogsno = str(1)
+	logfile = os.path.splitext(os.path.basename(__file__))[0] + '_log_' + nextlogsno.zfill(2) + '.txt'
+	logfile = os.path.join(cwd,logfile)	
 	if os.path.isfile(logfile):
 		print('The log file: %s is existent. Please rename or delete before running this script' %logfile)
 		sys.exit()
 	
-	manuallogger(logfile, "w", "run topsApp.py in full for multiple IFGs in sequence.")
-	manuallogger(logfile, "a", "Prog. started at: " + str(sttm))
-	manuallogger(logfile, "a", "SLC files are stored in the dir: " + slcdir)
-	manuallogger(logfile, "a", "Orb files are stored in the dir: " + orbdir)
-	manuallogger(logfile, "a", "AUX files are stored in the dir: " + auxdir)
-	manuallogger(logfile, "a", "DEM files that will be copied and used: " + os.path.abspath(demfle) + '*')
-	manuallogger(logfile, "a", "xml file that will be copied, edit and used: " + os.path.abspath(xmlfile))
-	manuallogger(logfile, "a", "List of IFGs that will be processed is in: " + ifgfle)
-	manuallogger(logfile, "a", "Number of IFGs that will be processed: " + str(ifgs))	
-	manuallogger(logfile, "a", "-------------------------------------------------------------------------------------------------------")
+	manuallogger(logfile, "w", "Run topsApp.py in full for multiple IFGs in sequence.")
+	manuallogger(logfile, "a", "Prog. started at: " + str(sttm_all))
+	manuallogger(logfile, "a", "SLC files are stored in the dir            : " + slcdir)
+	manuallogger(logfile, "a", "Orb files are stored in the dir            : " + orbdir)
+	manuallogger(logfile, "a", "AUX files are stored in the dir            : " + auxdir)
+	manuallogger(logfile, "a", "DEM files that will be copied and used     : " + os.path.join(dempth,demfle + '*'))
+	manuallogger(logfile, "a", "xml file that will be copied, edit and used: " + os.path.join(cwd,xmlfile))
+	manuallogger(logfile, "a", "List of IFGs that will be processed is in  : " + ifgfle)
+	manuallogger(logfile, "a", "Number of IFGs that will be considered: " + str(ifgs))	
+	manuallogger(logfile, "a", "--------------------------------------------------------------------------------------------------------------------------------------------")
 	
 	runifgs = len(ifglst)
 	ifgflag = [False] * runifgs
-	for idx, item in enumerate(ifglst):
-		os.chdir(cwd)
+	os.chdir(cwd)
+	prtline = '-----------------------------------------------------------------------------------------------------------------------------'
+	phafile,cohfile = 'filt_topophase.unw.geo','topophase.cor.geo'
+	for idx, item in enumerate(ifglst):		
 		subdir = item[0] + '-' + item[1]
-		if os.path.isdir(subdir):
-			print('\n-----------------------------------------------------------------------------------------------------------------------------')
-			print('The directory: %s had been existent before this script was called. topsApp.py will therefore not run for this IFG.'  %(subdir))
-			manuallogger(logfile, "a","")
-			manuallogger(logfile, 'a', 'The directory: %s had been existent before this script was called. topsApp.py will therefore not run for this IFG.'  %(subdir))
+		if os.path.isfile(os.path.join(subdir,'merged',phafile)) and os.path.isfile(os.path.join(subdir,'merged',cohfile)):
+			print('%s\nThe directory: %s is existent with %s & %s included. topsApp.py will not run for this IFG.' %(prtline,subdir,phafile,cohfile))
+			manuallogger(logfile, 'a', 'The directory: %s is existent with %s & %s included. topsApp.py will not run for this IFG.' %(subdir,phafile,cohfile))
 			runifgs -= 1
 			ifgflag[idx] = True
+	
+	for item in ifglst:
+		subdir = item[0] + '-' + item[1]
+		if os.path.isdir(subdir) and (not os.path.isfile(os.path.join(subdir,'merged',phafile)) or not os.path.isfile(os.path.join(subdir,'merged',cohfile))):
+			print('%s\nDelete the directory: %s, which is existent but %s or %s are not included.' %(prtline,subdir,phafile,cohfile))
+			manuallogger(logfile, 'a', 'Delete the directory: %s, which is existent but %s or %s are not included.' %(subdir,phafile,cohfile))
+			shutil.rmtree(subdir) # This does not work in Ubuntu shared folder. Use below.
+			#cmd = "rm -r " + subdir
+			#subprocess.call(cmd, shell=True)
 
-	ifgno = 0
-	count = 0
-	for idx, item in enumerate(ifglst):
+	ifgno, count, sttm_tops = 0, 0, datetime.datetime.now()
+	for idx, item in enumerate(ifglst):		
 		if not ifgflag[idx]:
-			ifgno += 1
-			os.chdir(cwd)
+			#os.chdir(cwd)
+			ifgno += 1			
 			subdir = item[0] + '-' + item[1]
-			if os.path.isdir(subdir):	# This is for the case this subdir had not been existent before this script was called (its flag = False)
-							# but it was run by another computer, e.g., spatial01 or Geodesy02 server,
-							# and copied to this current dir. while this script is running.
-				print('\n-----------------------------------------------------------------------------------------------------------------------------')
-				print('The directory: %d / %d: %s has been copied to this current directory while this script is running. topsApp.py will therefore not run for this IFG.'  %(ifgno, runifgs, subdir))
-				manuallogger(logfile, "a","")
-				manuallogger(logfile, 'a', 'The directory: %d / %d: %s has been copied to this current directory while this script is running. topsApp.py will therefore not run for this IFG.'  %(ifgno, runifgs, subdir))
-		
+			if os.path.isfile(os.path.join(subdir,'merge',phafile)) and os.path.isfile(os.path.join(subdir,'merge',cohfile)):
+				# This is for the case this subdir had not been existent before this script was called (its flag = False)
+				# but it was run by another computer, e.g., spatial01 or Geodesy02 server,
+				# and copied to this current dir. while this script is running.
+				print('%s\nThe directory: %d / %d: %s has been copied to this current directory while this script is running. topsApp.py will not run for this IFG.'  %(prtline,ifgno,runifgs,subdir))
+				manuallogger(logfile, 'a', 'The directory: %d / %d: %s has been copied to this current directory while this script is running. topsApp.py will not run for this IFG.'  %(ifgno, runifgs, subdir))
 			else:			
 				count += 1
-				print('\n-----------------------------------------------------------------------------------------------------------------------------')
-				print('Run topsApp.py for the directory: %d / %d: %s.\n' %(ifgno, runifgs, subdir))
-				manuallogger(logfile, "a","")
-				manuallogger(logfile, 'a', 'Run topsApp.py for the directory: %d / %d: %s.' %(ifgno, runifgs, subdir))
-				sttm1 = datetime.datetime.now()
-			
-				cmd = "mkdir " + subdir			
-				subprocess.call(cmd, shell=True)
+				print('%s\nRun topsApp.py for the directory: %d / %d: %s.' %(prtline,ifgno,runifgs,subdir))
+				manuallogger(logfile, 'a', 'Run topsApp.py for the directory: %d / %d: %s.' %(ifgno,runifgs,subdir))
+				sttm_subdir = datetime.datetime.now()
+				
+				if not os.path.isdir(subdir):
+					cmd = "mkdir " + subdir			
+					subprocess.call(cmd, shell=True)
 			
 				manuallogger(logfile, 'a', '\t\tCopy 6 dem files to IFG directory.')
 				cmd = 'cp ' + os.path.join(dempth, demfle + '* ') + subdir + '/.'
@@ -163,27 +190,10 @@ if __name__ == '__main__':
 				manuallogger(logfile, 'a', '\t\tCopy topsApp.xml file to IFG directory.')
 				cmd = 'cp ' + xmlfile + ' ' + subdir + '/.'
 				subprocess.call(cmd, shell=True)
-				os.chdir(subdir)
-			
-				manuallogger(logfile, 'a', '\t\tEdit topsApp.xml file to fit with input data corresponding to processed IFG directory.')
-				tree = ET.parse(xmlfile)
-				root = tree.getroot()
-				for child1 in root:				
-					for child2 in child1:					
-						if child2.attrib['name'] in ['master', 'slave']:
-							for child3 in child2:
-								if child3.attrib['name'] == 'orbit directory':
-									child3.text = orbdir
-								elif child3.attrib['name'] == 'auxiliary data directory':
-									child3.text = auxdir
-								elif child3.attrib['name'] == 'SAFE':
-									if child2.attrib['name'] == 'master':
-										child3.text = os.path.join(slcdir, slcfilelst[slcdatelst.index(item[0])])
-									elif child2.attrib['name'] == 'slave':
-										child3.text = os.path.join(slcdir, slcfilelst[slcdatelst.index(item[1])])
-						elif child2.attrib['name'] == 'demFilename':
-							child2.text = demfle + '.wgs84'
-				tree.write(xmlfile)
+
+				os.chdir(subdir)			
+				manuallogger(logfile, 'a', '\t\tEdit topsApp.xml file to fit with input data corresponding to processed IFG directory.')				
+				iscexmlgen(xmlfile,orbdir,auxdir,os.path.join(slcdir,slcfilelst[slcdatelst.index(item[0])]),os.path.join(slcdir,slcfilelst[slcdatelst.index(item[1])]),demfle)
 			
 				cmd = "topsApp.py " + "topsApp.xml"
 				'''startstep = "startup"
@@ -205,28 +215,39 @@ if __name__ == '__main__':
 				cmd = 'rm -r coarse_* ESD fine_* geom_master'
 				manuallogger(logfile, 'a', '\t\tDelete multiple directories to save disk space by: %s' %cmd)
 				subprocess.call(cmd, shell=True)
-			
-				fntm1 = datetime.datetime.now()
-				manuallogger(logfile, "a","")
-				manuallogger(logfile, "a",     "\t\tStarted  at : " + str(sttm1))
-				manuallogger(logfile, "a",     "\t\tFinished at : " + str(fntm1))
-				manuallogger(logfile, "a",     "\t\tRunning time: " + str(fntm1 - sttm1))
-			
-				print("\t\tStarted  at : " + str(sttm1))
-				print("\t\tFinished at : " + str(fntm1))
-				print("\t\tRunning time: " + str(fntm1 - sttm1))
 
-	fntm = datetime.datetime.now()	
-	os.chdir(cwd)	
+				os.chdir(cwd)
+				if not os.path.isfile(os.path.join(subdir,'merge',phafile)) or not os.path.isfile(os.path.join(subdir,'merge',cohfile)):
+					# This is for the case topsApp.py did not run successfully 
+					# that 'filt_topophase.unw.geo' &/or 'topophase.cor.geo' were not generated
+					# usually coherence threshold is too high that no point left to subsequently used
+					print('\t\tnDelete current directory as topsApp.py has not run successfully')
+					manuallogger(logfile, 'a', '\t\tnDelete current directory as topsApp.py has not run successfully')
+					shutil.rmtree(subdir) # This does not work with Ubuntu shared folder. Use below.
+					#cmd = "rm -r " + subdir
+					#subprocess.call(cmd, shell=True)
+			
+				fntm_subdir = datetime.datetime.now()
+				manuallogger(logfile, "a","")
+				manuallogger(logfile, "a", "\t\tStarted  at : " + str(sttm_subdir))
+				manuallogger(logfile, "a", "\t\tFinished at : " + str(fntm_subdir))
+				manuallogger(logfile, "a", "\t\tRunning time: " + str(fntm_subdir - sttm_subdir))
+			
+				print("\t\tStarted  at : " + str(sttm_subdir))
+				print("\t\tFinished at : " + str(fntm_subdir))
+				print("\t\tRunning time: " + str(fntm_subdir - sttm_subdir))
+
+	fntm_all = datetime.datetime.now()
+	#os.chdir(cwd)
 	manuallogger(logfile, "a", "-------------------------------------------------------------")
 	manuallogger(logfile, "a", "-------------------------------------------------------------")
 	manuallogger(logfile, "a", "=============================================================")
 	manuallogger(logfile, "a", "-------------------------------------------------------------")
-	manuallogger(logfile, "a",     "Program started  at             : " + str(sttm))
-	manuallogger(logfile, "a",     "Program finished at             : " + str(fntm))
-	manuallogger(logfile, "a",     "Total running time              : " + str(fntm - sttm))
+	manuallogger(logfile, "a", "Program started  at           : " + str(sttm_all))
+	manuallogger(logfile, "a", "Program finished at           : " + str(fntm_all))
+	manuallogger(logfile, "a", "Total running time [all steps]: " + str(fntm_all - sttm_all))
 	if count > 0:
-		manuallogger(logfile, "a", "Average running time for one IFG: " + str((fntm - sttm)/count))
+		manuallogger(logfile, "a", "Average running time [topsapp.py only] for one IFG: " + str((fntm_all - sttm_tops)/count))
 	manuallogger(logfile, "a", "-------------------------------------------------------------")
 	manuallogger(logfile, "a", "=============================================================")
 
@@ -234,10 +255,10 @@ if __name__ == '__main__':
 	print("-------------------------------------------------------------")
 	print("=============================================================")
 	print("-------------------------------------------------------------")
-	print("Program started  at             : " + str(sttm))
-	print("Program finished at             : " + str(fntm))
-	print("Total running time              : " + str(fntm - sttm))
+	print("Program started  at           : " + str(sttm_all))
+	print("Program finished at           : " + str(fntm_all))
+	print("Total running time [all steps]: " + str(fntm_all - sttm_all))
 	if count > 0:
-		print("Average running time for one IFG: " + str((fntm - sttm)/count))
+		print("Average running time [topsapp.py only] for one IFG: " + str((fntm_all - sttm_tops)/count))
 	print("-------------------------------------------------------------")
 	print("=============================================================")
