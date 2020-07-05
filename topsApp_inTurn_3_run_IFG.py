@@ -167,7 +167,7 @@ if __name__ == '__main__':
 			#os.chdir(cwd)
 			ifgno += 1			
 			subdir = item[0] + '-' + item[1]
-			if os.path.isfile(os.path.join(subdir,'merge',phafile)) and os.path.isfile(os.path.join(subdir,'merge',cohfile)):
+			if os.path.isfile(os.path.join(subdir,'merged',phafile)) and os.path.isfile(os.path.join(subdir,'merged',cohfile)):
 				# This is for the case this subdir had not been existent before this script was called (its flag = False)
 				# but it was run by another computer, e.g., spatial01 or Geodesy02 server,
 				# and copied to this current dir. while this script is running.
@@ -217,7 +217,7 @@ if __name__ == '__main__':
 				subprocess.call(cmd, shell=True)
 
 				os.chdir(cwd)
-				if not os.path.isfile(os.path.join(subdir,'merge',phafile)) or not os.path.isfile(os.path.join(subdir,'merge',cohfile)):
+				if not os.path.isfile(os.path.join(subdir,'merged',phafile)) or not os.path.isfile(os.path.join(subdir,'merged',cohfile)):
 					# This is for the case topsApp.py did not run successfully 
 					# that 'filt_topophase.unw.geo' &/or 'topophase.cor.geo' were not generated
 					# usually coherence threshold is too high that no point left to subsequently used
