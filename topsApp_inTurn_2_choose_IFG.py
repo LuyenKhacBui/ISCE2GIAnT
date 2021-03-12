@@ -14,7 +14,7 @@ appdir = dirname(dirname(abspath(__file__)))
 ##sys.path.append(appdir)
 sys.path.insert(0, appdir)
 
-from modules.geotools import DecimalYearComp as decyrcomp
+#from modules.geotools import DecimalYearComp as decyrcomp
 
 ''' This is a tool used to read ISCE results from topsApp_inTurn_1_prep_IFG.py then choose SBAS IFGs based on temporal and perpendicular baseline thresholds'
 	This is coded by Luyen BUI on: 06 JUNE 2019'''
@@ -52,6 +52,14 @@ def bperpread(iscelogfile):
 			bperp_iw[5] = float(line[56:])
 	
 	return np.nanmean(bperp_iw)
+
+def decyrcomp(year, month, day):	# This tool is used to calc. decimal year from year, month, date inputed	
+	fn_noofdays = (date(year, month, day) - date(year, 1, 1)).days
+	fn_daysofyear = (date(year + 1, month, day) - date(year, month, day)).days
+	fn_decimal_year = year + float(fn_noofdays)/float(fn_daysofyear)	# This "float" fn. is used so that 
+																		# the result of fn_noofdays/fn_daysofyear will be in
+																		# double (float) format instead of integer
+	return fn_decimal_year
 	
 def manuallogger(logfile, method, string):
 	with open(logfile, method) as myfile:
